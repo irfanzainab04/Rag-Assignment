@@ -1,11 +1,15 @@
 import os
+import json
+import hashlib
 import pickle
 import time
 from pathlib import Path
 from typing import Dict, List
 
 from dotenv import load_dotenv
+from langchain_text_splitters import CharacterTextSplitter, RecursiveCharacterTextSplitter
 from pinecone import Pinecone
+from rank_bm25 import BM25Okapi
 from sentence_transformers import CrossEncoder, SentenceTransformer
 
 
@@ -35,6 +39,11 @@ RRF_K = 60
 FUSION_POOL = 30
 FINAL_TOP_K = 5
 
+STRATEGIES = {
+    "fixed": CharacterTextSplitter(chunk_size=512, chunk_overlap=64, separator=" "),
+    "recursive": RecursiveCharacterTextSplitter(chunk_size=512, chunk_overlap=100),
+}
+
 class Retriever:
     def __init__(self, strategy: str = "recursive", index_prefix: str = "medical-rag"):
         api_key = get_api_key("PINECONE_API_KEY")
@@ -52,13 +61,52 @@ class Retriever:
     def _load_bm25(strategy: str):
         bm25_path = Path(f"data/bm25_{strategy}.pkl")
         if not bm25_path.exists():
-            raise FileNotFoundError(f"BM25 cache not found: {bm25_path}. Run chunk_and_index.py first.")
+            return Retriever._build_bm25_from_corpus(strategy)
 
         with bm25_path.open("rb") as handle:
             payload = pickle.load(handle)
 
         bm25 = payload["bm25"]
         chunks = payload["chunks"]
+        chunk_map = {chunk["id"]: chunk for chunk in chunks}
+        return bm25, chunks, chunk_map
+
+    @staticmethod
+    def _build_bm25_from_corpus(strategy: str):
+        """Fallback for cloud deploys where generated BM25 pickle is not committed."""
+        corpus_path = Path("data/corpus_clean.json")
+        if not corpus_path.exists():
+            raise FileNotFoundError(
+                f"BM25 cache missing and corpus not found at {corpus_path}. "
+                "Ensure data/corpus_clean.json is included in the repository."
+            )
+
+        if strategy not in STRATEGIES:
+            raise ValueError(f"Unsupported strategy '{strategy}'. Choose from {sorted(STRATEGIES)}")
+
+        articles = json.loads(corpus_path.read_text(encoding="utf-8"))
+        splitter = STRATEGIES[strategy]
+
+        chunks: List[Dict[str, str]] = []
+        for article in articles:
+            text = f"{article['title']}. {article['abstract']}"
+            article_uid = hashlib.sha1(
+                f"{article.get('id', '')}|{article.get('title', '')}".encode("utf-8")
+            ).hexdigest()[:16]
+            for i, chunk in enumerate(splitter.split_text(text)):
+                chunks.append(
+                    {
+                        "id": f"{article_uid}_{i}",
+                        "text": chunk,
+                        "title": article.get("title", "Untitled"),
+                        "source": article.get("source", "PubMed"),
+                        "topic": article.get("topic", "unknown"),
+                        "pubmed_id": str(article.get("id", ""))[:128],
+                    }
+                )
+
+        tokenized = [chunk["text"].lower().split() for chunk in chunks]
+        bm25 = BM25Okapi(tokenized)
         chunk_map = {chunk["id"]: chunk for chunk in chunks}
         return bm25, chunks, chunk_map
 
