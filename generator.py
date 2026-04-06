@@ -9,6 +9,21 @@ from huggingface_hub import InferenceClient
 
 load_dotenv()
 
+def get_api_key(key_name: str) -> str:
+    """Get API key from Streamlit secrets (Streamlit Cloud) or environment variables (local)."""
+    try:
+        import streamlit as st
+        if key_name in st.secrets:
+            return st.secrets[key_name]
+    except (ImportError, Exception):
+        pass
+    
+    env_value = os.getenv(key_name)
+    if not env_value:
+        raise EnvironmentError(f"{key_name} is missing. Add it to .env, environment variables, or Streamlit secrets.")
+    return env_value
+
+
 HF_MODEL_ID = "meta-llama/Meta-Llama-3-8B-Instruct"
 FALLBACK_MODELS = [HF_MODEL_ID]
 _HF_CLIENT: InferenceClient | None = None
@@ -81,9 +96,7 @@ def _local_extractive_answer(query: str, chunks: List[Dict[str, str]]) -> str:
 def _get_hf_client() -> InferenceClient:
     global _HF_CLIENT
     if _HF_CLIENT is None:
-        token = os.getenv("HF_API_TOKEN")
-        if not token:
-            raise EnvironmentError("HF_API_TOKEN is missing. Add it to .env or environment variables.")
+        token = get_api_key("HF_API_TOKEN")
         _HF_CLIENT = InferenceClient(token=token)
     return _HF_CLIENT
 

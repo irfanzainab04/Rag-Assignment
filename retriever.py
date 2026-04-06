@@ -11,6 +11,21 @@ from sentence_transformers import CrossEncoder, SentenceTransformer
 
 load_dotenv()
 
+
+def get_api_key(key_name: str) -> str:
+    """Get API key from Streamlit secrets (Streamlit Cloud) or environment variables (local)."""
+    try:
+        import streamlit as st
+        if key_name in st.secrets:
+            return st.secrets[key_name]
+    except (ImportError, Exception):
+        pass
+    
+    env_value = os.getenv(key_name)
+    if not env_value:
+        raise EnvironmentError(f"{key_name} is missing. Add it to .env, environment variables, or Streamlit secrets.")
+    return env_value
+
 EMBED_MODEL_NAME = "all-MiniLM-L6-v2"
 RERANKER_NAME = "cross-encoder/ms-marco-MiniLM-L-6-v2"
 
@@ -22,9 +37,7 @@ FINAL_TOP_K = 5
 
 class Retriever:
     def __init__(self, strategy: str = "recursive", index_prefix: str = "medical-rag"):
-        api_key = os.getenv("PINECONE_API_KEY")
-        if not api_key:
-            raise EnvironmentError("PINECONE_API_KEY is missing. Add it to .env or environment variables.")
+        api_key = get_api_key("PINECONE_API_KEY")
 
         self.strategy = strategy
         self.index_name = f"{index_prefix}-{strategy}"
