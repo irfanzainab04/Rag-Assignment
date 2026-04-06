@@ -37,6 +37,31 @@ This repository contains a medical-domain Retrieval-Augmented Generation (RAG) p
 .\.venv\Scripts\python.exe run_evaluation.py --continue-on-error
 ```
 
+## Deployment
+
+### Streamlit Cloud (Recommended)
+
+1. Ensure code is pushed to GitHub: https://github.com/irfanzainab04/Rag-Assignment
+2. Go to [share.streamlit.io](https://share.streamlit.io)
+3. Click "New app" and select this repository
+4. Specify `main` branch and `app.py` as the main file
+5. Go to **App settings** → **Secrets** and add:
+   ```toml
+   PINECONE_API_KEY = "your_pinecone_api_key"
+   HF_API_TOKEN = "your_huggingface_api_token"
+   ```
+6. Deploy!
+
+### Docker (Self-hosted)
+
+```bash
+docker build -t medical-rag .
+docker run -p 8501:8501 \
+  -e PINECONE_API_KEY="your_key" \
+  -e HF_API_TOKEN="your_token" \
+  medical-rag
+```
+
 ## Included Artifacts
 
 - `data/corpus_clean.json` (cleaned corpus)
