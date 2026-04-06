@@ -20,22 +20,66 @@ This repository contains a medical-domain Retrieval-Augmented Generation (RAG) p
 - `app.py` - Streamlit UI
 - `requirements.txt` - Python dependencies
 
-## Quick Start
+## Local Replication (Exact Steps)
 
-1. Create and activate virtual environment
-2. Install dependencies
-3. Add API keys in `.env`
-4. Run app:
+1. Clone the repository:
 
-```powershell
-.\.venv\Scripts\python.exe -m streamlit run app.py --server.port 8503
+```bash
+git clone https://github.com/irfanzainab04/Rag-Assignment
+cd Rag-Assignment
 ```
 
-5. Run evaluation:
+2. Create and activate a Python 3.11 virtual environment:
+
+Linux/macOS:
+
+```bash
+python3.11 -m venv .venv
+source .venv/bin/activate
+```
+
+Windows PowerShell:
 
 ```powershell
-.\.venv\Scripts\python.exe run_evaluation.py --continue-on-error
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
 ```
+
+3. Install dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+4. Add API keys in `.env`:
+
+```dotenv
+PINECONE_API_KEY=your_pinecone_api_key
+HF_API_TOKEN=your_huggingface_api_token
+```
+
+5. Build chunk indexes and BM25 caches:
+
+```bash
+python chunk_and_index.py
+```
+
+6. Run the Streamlit app:
+
+```bash
+streamlit run app.py
+```
+
+7. Run ablation evaluation (optional):
+
+```bash
+python run_evaluation.py --continue-on-error
+```
+
+8. Expected outputs:
+- App opens locally and returns answers with retrieved chunks.
+- LLM-as-a-Judge scores are visible in UI (Faithfulness and Relevancy).
+- Evaluation summary is written to `data/evaluation_results/ablation_summary.json`.
 
 ## Deployment
 
