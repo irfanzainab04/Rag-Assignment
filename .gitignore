@@ -1,0 +1,14 @@
+.env
+.venv/
+__pycache__/
+.ipynb_checkpoints/
+*.pyc
+*.pyo
+*.pyd
+*.log
+
+# Keep source data and evaluation JSON, ignore heavy generated caches
+data/bm25_*.pkl
+
+# Optional local notebook checkpoints
+*.ipynb_checkpoints

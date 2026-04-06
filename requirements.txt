@@ -1,0 +1,14 @@
+pymed
+pinecone
+sentence-transformers
+rank-bm25
+streamlit
+python-dotenv
+requests
+transformers
+torch
+scikit-learn
+numpy
+matplotlib
+langchain
+langchain-text-splitters
